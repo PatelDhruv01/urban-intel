@@ -1,5 +1,11 @@
 venv/
+venv312/
 __pycache__/
 *.pyc
+*.pyo
+.env
 backend/data/
 *.json
+!backend/data/.gitkeep
+.DS_Store
+node_modules/

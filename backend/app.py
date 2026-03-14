@@ -1,46 +1,69 @@
 """
 app.py
 ------
-Student 1 - Backend API
-Flask REST API serving processed Pune infrastructure data
-to the frontend visualization layer.
+Student 1 - Backend API (FastAPI)
+REST API serving processed Bangalore infrastructure data
+and AI-powered urban planning suggestions via Gemini.
 
 Endpoints:
-  GET /api/health                         - health check
-  GET /api/city/stats                     - city-level summary stats
-  GET /api/infrastructure/<category>      - points for a category
-  GET /api/grid                           - full grid with density scores
-  GET /api/underserved                    - underserved area analysis
-  GET /api/query/underserved              - parameterised underserved query
-  GET /api/summary/by-area                - infrastructure count by grid area
+  GET  /api/v1/health
+  GET  /api/v1/city/stats
+  GET  /api/v1/infrastructure/{category}
+  GET  /api/v1/grid
+  GET  /api/v1/analysis/underserved
+  GET  /api/v1/analysis/query
+  GET  /api/v1/analytics/summary
+  POST /api/v1/ai/suggestions
 
 Usage:
-    python app.py
-    Server runs at http://localhost:5000
+    uvicorn app:app --reload --port 8000
 """
 
-from flask import Flask, jsonify, request
-from flask_cors import CORS
 import json
 import os
 import math
+from pathlib import Path
+from typing import Optional
+from functools import lru_cache
+
+from fastapi import FastAPI, Query, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+import google.generativeai as genai
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ─── INIT ─────────────────────────────────────────────────────────────────────
-app = Flask(__name__)
-CORS(app)  # Allow all origins so the frontend can call freely
+app = FastAPI(
+    title="Urban Intelligence Dashboard API",
+    description="Infrastructure density analysis for Bangalore city",
+    version="1.0.0"
+)
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data/processed")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+DATA_DIR = Path(__file__).parent / "data" / "processed"
+
+# Gemini setup
+GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
+if GEMINI_KEY:
+    genai.configure(api_key=GEMINI_KEY)
 
 # ─── DATA LOADER ──────────────────────────────────────────────────────────────
-_cache = {}
+_cache: dict = {}
 
-def load(filename):
-    """Load a processed JSON file, with in-memory caching."""
+def load(filename: str):
     if filename not in _cache:
-        filepath = os.path.join(DATA_DIR, filename)
-        if not os.path.exists(filepath):
+        fp = DATA_DIR / filename
+        if not fp.exists():
             return None
-        with open(filepath, encoding="utf-8") as f:
+        with open(fp, encoding="utf-8") as f:
             _cache[filename] = json.load(f)
     return _cache[filename]
 
@@ -49,272 +72,207 @@ def haversine_km(lat1, lon1, lat2, lon2):
     R = 6371.0
     dlat = math.radians(lat2 - lat1)
     dlon = math.radians(lon2 - lon1)
-    a = (math.sin(dlat / 2) ** 2
-         + math.cos(math.radians(lat1))
-         * math.cos(math.radians(lat2))
-         * math.sin(dlon / 2) ** 2)
-    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    a = (math.sin(dlat/2)**2
+         + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2))
+         * math.sin(dlon/2)**2)
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
 
-def error(msg, code=400):
-    return jsonify({"error": msg}), code
+VALID_CATEGORIES = ["hospitals", "schools", "traffic_nodes", "buildings", "pharmacies"]
 
-def paginate(data, request):
-    """Optional pagination via ?page=1&limit=100"""
-    try:
-        page  = max(1, int(request.args.get("page",  1)))
-        limit = max(1, min(5000, int(request.args.get("limit", 5000))))
-    except ValueError:
-        page, limit = 1, 5000
-    start = (page - 1) * limit
-    end   = start + limit
-    return data[start:end], len(data), page, limit
+# ─── SCHEMAS ──────────────────────────────────────────────────────────────────
+class AISuggestionRequest(BaseModel):
+    facility_type: str = "hospital"
+    top_n: int = 5
 
 # ─── ROUTES ───────────────────────────────────────────────────────────────────
 
-@app.route("/api/health")
+@app.get("/api/v1/health")
 def health():
-    """Health check — also returns what data files are available."""
-    files = {
-        "hospitals":     os.path.exists(os.path.join(DATA_DIR, "hospitals_clean.json")),
-        "schools":       os.path.exists(os.path.join(DATA_DIR, "schools_clean.json")),
-        "traffic_nodes": os.path.exists(os.path.join(DATA_DIR, "traffic_nodes_clean.json")),
-        "buildings":     os.path.exists(os.path.join(DATA_DIR, "buildings_clean.json")),
-        "pharmacies":    os.path.exists(os.path.join(DATA_DIR, "pharmacies_clean.json")),
-        "grid":          os.path.exists(os.path.join(DATA_DIR, "grid_analysis.json")),
-        "underserved":   os.path.exists(os.path.join(DATA_DIR, "underserved_areas.json")),
-    }
-    return jsonify({
-        "status": "ok",
+    """Health check — confirms all data files are available."""
+    files = {cat: (DATA_DIR / f"{cat}_clean.json").exists() for cat in VALID_CATEGORIES}
+    files.update({
+        "grid":       (DATA_DIR / "grid_analysis.json").exists(),
+        "underserved":(DATA_DIR / "underserved_areas.json").exists(),
+        "city_stats": (DATA_DIR / "city_stats.json").exists(),
+    })
+    return {
+        "status":    "ok",
+        "city":      "Bangalore",
+        "api":       "FastAPI v1",
+        "gemini":    bool(GEMINI_KEY),
         "data_files": files,
         "all_ready": all(files.values())
-    })
+    }
 
 
-@app.route("/api/city/stats")
+@app.get("/api/v1/city/stats")
 def city_stats():
-    """
-    Overall city statistics.
-    Used by the dashboard summary cards.
-    """
-    stats = load("city_stats.json")
-    if stats is None:
-        return error("city_stats.json not found", 404)
-    return jsonify(stats)
+    """City-level summary statistics for dashboard KPI cards."""
+    data = load("city_stats.json")
+    if not data:
+        raise HTTPException(404, "city_stats.json not found. Run process_data.py first.")
+    return data
 
 
-@app.route("/api/infrastructure/<category>")
-def infrastructure(category):
+@app.get("/api/v1/infrastructure/{category}")
+def infrastructure(
+    category: str,
+    limit: int = Query(5000, ge=1, le=10000),
+    page:  int = Query(1,    ge=1),
+    bbox:  Optional[str] = Query(None, description="south,west,north,east — filter by bounding box")
+):
     """
     Return cleaned point data for a given infrastructure category.
-
-    Path param:
-      category: hospitals | schools | traffic_nodes | buildings | pharmacies
-
-    Query params (all optional):
-      limit  (int, default 5000) - max records to return
-      page   (int, default 1)    - page number
-
-    Example:
-      GET /api/infrastructure/hospitals
-      GET /api/infrastructure/schools?limit=200&page=2
+    Supports optional bbox filtering for map viewport queries.
     """
-    valid = ["hospitals", "schools", "traffic_nodes", "buildings", "pharmacies"]
-    if category not in valid:
-        return error(f"Invalid category. Choose from: {', '.join(valid)}")
+    if category not in VALID_CATEGORIES:
+        raise HTTPException(400, f"Invalid category. Choose from: {', '.join(VALID_CATEGORIES)}")
 
     data = load(f"{category}_clean.json")
     if data is None:
-        return error(f"{category}_clean.json not found", 404)
+        raise HTTPException(404, f"{category}_clean.json not found.")
 
-    items, total, page, limit = paginate(data, request)
-    return jsonify({
+    items = data
+
+    # Optional bounding box filter
+    if bbox:
+        try:
+            s, w, n, e = map(float, bbox.split(","))
+            items = [i for i in items if s <= i["lat"] <= n and w <= i["lon"] <= e]
+        except Exception:
+            raise HTTPException(400, "bbox must be: south,west,north,east (floats)")
+
+    total = len(items)
+    start = (page - 1) * limit
+    paged = items[start:start + limit]
+
+    return {
         "category": category,
         "total":    total,
         "page":     page,
         "limit":    limit,
-        "count":    len(items),
-        "data":     items
-    })
+        "count":    len(paged),
+        "data":     paged
+    }
 
 
-@app.route("/api/grid")
-def grid():
+@app.get("/api/v1/grid")
+def grid(
+    category:    Optional[str]   = Query(None),
+    min_density: Optional[float] = Query(None, ge=0, le=100)
+):
     """
-    Return the full 25×25 grid with infrastructure counts and density scores.
-
-    Query params (all optional):
-      category  - filter density by: hospitals | schools | traffic_nodes | buildings | pharmacies
-      min_density (float 0-100) - only return cells above this density score
-
-    Example:
-      GET /api/grid
-      GET /api/grid?category=hospitals&min_density=50
+    Full 25×25 grid with per-cell infrastructure counts and density scores.
+    Optionally filter by category density threshold.
     """
     data = load("grid_analysis.json")
-    if data is None:
-        return error("grid_analysis.json not found", 404)
-
-    category    = request.args.get("category")
-    min_density = request.args.get("min_density", type=float)
+    if not data:
+        raise HTTPException(404, "grid_analysis.json not found.")
 
     filtered = data
     if category:
-        density_key = f"{category}_density"
-        valid_cats  = ["hospitals", "schools", "traffic_nodes", "buildings", "pharmacies"]
-        if category not in valid_cats:
-            return error(f"Invalid category. Choose from: {', '.join(valid_cats)}")
+        if category not in VALID_CATEGORIES:
+            raise HTTPException(400, f"Invalid category.")
         if min_density is not None:
-            filtered = [c for c in filtered if c.get(density_key, 0) >= min_density]
+            filtered = [c for c in data if c.get(f"{category}_density", 0) >= min_density]
 
-    return jsonify({
-        "total_cells": len(data),
-        "filtered_cells": len(filtered),
-        "grid": filtered
-    })
+    return {"total_cells": len(data), "filtered_cells": len(filtered), "grid": filtered}
 
 
-@app.route("/api/underserved")
-def underserved():
+@app.get("/api/v1/analysis/underserved")
+def underserved(
+    type: str = Query("any", description="hospital | school | pharmacy | any")
+):
     """
-    Return all grid cells with underservice analysis.
-
-    Query params (all optional):
-      type  - filter by: hospital | school | pharmacy | any
-              default: any
-
-    Example:
-      GET /api/underserved
-      GET /api/underserved?type=hospital
+    Pre-computed underserved areas using fixed coverage thresholds.
+    For dynamic radius queries use /analysis/query instead.
     """
     data = load("underserved_areas.json")
-    if data is None:
-        return error("underserved_areas.json not found", 404)
+    if not data:
+        raise HTTPException(404, "underserved_areas.json not found.")
 
-    filter_type = request.args.get("type", "any")
+    filter_map = {
+        "hospital": lambda c: c.get("lacks_hospital"),
+        "school":   lambda c: c.get("lacks_school"),
+        "pharmacy": lambda c: c.get("lacks_pharmacy"),
+        "any":      lambda c: c.get("is_underserved"),
+    }
+    if type not in filter_map:
+        raise HTTPException(400, "type must be: hospital | school | pharmacy | any")
 
-    if filter_type == "hospital":
-        filtered = [c for c in data if c.get("lacks_hospital")]
-    elif filter_type == "school":
-        filtered = [c for c in data if c.get("lacks_school")]
-    elif filter_type == "pharmacy":
-        filtered = [c for c in data if c.get("lacks_pharmacy")]
-    else:  # "any"
-        filtered = [c for c in data if c.get("is_underserved")]
-
-    return jsonify({
-        "filter": filter_type,
-        "total_underserved": len(filtered),
-        "cells": filtered
-    })
+    filtered = [c for c in data if filter_map[type](c)]
+    return {"filter": type, "total_underserved": len(filtered), "cells": filtered}
 
 
-@app.route("/api/query/underserved")
-def query_underserved():
+@app.get("/api/v1/analysis/query")
+def query_underserved(
+    facility:  str   = Query("hospital", description="hospital | school | pharmacy"),
+    radius_km: float = Query(3.0, ge=0.5, le=20.0)
+):
     """
-    THE BONUS FEATURE — natural language-style query endpoint.
-    "Which areas in Pune lack hospitals within X km?"
-
-    Query params:
-      facility  (str)   - hospital | school | pharmacy  (default: hospital)
-      radius_km (float) - coverage radius in km         (default: 3.0)
-      lat       (float) - optional: center point lat for proximity sort
-      lon       (float) - optional: center point lon for proximity sort
-
-    Example:
-      GET /api/query/underserved?facility=hospital&radius_km=3
-      GET /api/query/underserved?facility=school&radius_km=2
-      GET /api/query/underserved?facility=pharmacy&radius_km=1.5&lat=18.52&lon=73.85
+    Dynamic underserved area query — the core bonus feature.
+    Computes on-the-fly which grid cells lack the given facility within radius_km.
     """
-    facility  = request.args.get("facility",   "hospital")
-    radius_km = request.args.get("radius_km",  3.0, type=float)
-    user_lat  = request.args.get("lat",  type=float)
-    user_lon  = request.args.get("lon",  type=float)
-
-    # Load the appropriate clean facility dataset
-    facility_map = {
+    facility_file = {
         "hospital": "hospitals_clean.json",
         "school":   "schools_clean.json",
         "pharmacy": "pharmacies_clean.json",
     }
-    if facility not in facility_map:
-        return error("facility must be one of: hospital, school, pharmacy")
+    if facility not in facility_file:
+        raise HTTPException(400, "facility must be: hospital | school | pharmacy")
 
-    facilities = load(facility_map[facility])
+    facilities = load(facility_file[facility])
     grid_data  = load("grid_analysis.json")
-    if facilities is None or grid_data is None:
-        return error("Required data files not found", 404)
+    if not facilities or not grid_data:
+        raise HTTPException(404, "Required data files not found.")
 
-    # For each grid cell, compute nearest facility distance on the fly
     results = []
     for cell in grid_data:
-        clat = cell["center_lat"]
-        clon = cell["center_lon"]
-
-        nearest_km = min(
+        clat, clon = cell["center_lat"], cell["center_lon"]
+        nearest = min(
             (haversine_km(clat, clon, f["lat"], f["lon"]) for f in facilities),
             default=999
         )
+        if nearest > radius_km:
+            results.append({
+                "cell_id":                      cell["cell_id"],
+                "center_lat":                   clat,
+                "center_lon":                   clon,
+                f"nearest_{facility}_km":       round(nearest, 2),
+                "gap_km":                       round(nearest - radius_km, 2),
+                "hospitals":                    cell.get("hospitals", 0),
+                "schools":                      cell.get("schools", 0),
+                "pharmacies":                   cell.get("pharmacies", 0),
+                "buildings":                    cell.get("buildings", 0),
+            })
 
-        if nearest_km > radius_km:
-            result = {
-                "cell_id":         cell["cell_id"],
-                "center_lat":      clat,
-                "center_lon":      clon,
-                f"nearest_{facility}_km": round(nearest_km, 2),
-                "gap_km":          round(nearest_km - radius_km, 2),
-                "hospitals":       cell.get("hospitals", 0),
-                "schools":         cell.get("schools", 0),
-                "pharmacies":      cell.get("pharmacies", 0),
-                "buildings":       cell.get("buildings", 0),
-            }
-            # If user provided a point, add distance from that point
-            if user_lat is not None and user_lon is not None:
-                result["distance_from_query_km"] = round(
-                    haversine_km(user_lat, user_lon, clat, clon), 2
-                )
-            results.append(result)
-
-    # Sort by gap (largest gap first = most underserved)
     results.sort(key=lambda x: x["gap_km"], reverse=True)
+    return {
+        "query":                    f"Areas lacking {facility} within {radius_km}km",
+        "facility":                 facility,
+        "radius_km":                radius_km,
+        "total_underserved_cells":  len(results),
+        "results":                  results
+    }
 
-    return jsonify({
-        "query": f"Areas lacking {facility} within {radius_km} km",
-        "facility":   facility,
-        "radius_km":  radius_km,
-        "total_underserved_cells": len(results),
-        "results": results
-    })
 
-
-@app.route("/api/summary/by-area")
-def summary_by_area():
-    """
-    Infrastructure count grouped by grid area — used for bar/histogram charts.
-
-    Query params:
-      category - hospitals | schools | traffic_nodes | buildings | pharmacies
-                 (default: hospitals)
-      top_n    - return only top N cells by count (default: 20)
-
-    Example:
-      GET /api/summary/by-area?category=schools&top_n=15
-    """
-    category = request.args.get("category", "hospitals")
-    top_n    = request.args.get("top_n", 20, type=int)
-
-    valid = ["hospitals", "schools", "traffic_nodes", "buildings", "pharmacies"]
-    if category not in valid:
-        return error(f"Invalid category. Choose from: {', '.join(valid)}")
+@app.get("/api/v1/analytics/summary")
+def analytics_summary(
+    category: str = Query("hospitals"),
+    top_n:    int = Query(20, ge=1, le=50)
+):
+    """Infrastructure count per grid cell — used for bar charts."""
+    if category not in VALID_CATEGORIES:
+        raise HTTPException(400, f"Invalid category.")
 
     grid_data = load("grid_analysis.json")
-    if grid_data is None:
-        return error("grid_analysis.json not found", 404)
+    if not grid_data:
+        raise HTTPException(404, "grid_analysis.json not found.")
 
-    # Sort by count descending and take top N
     sorted_cells = sorted(grid_data, key=lambda c: c.get(category, 0), reverse=True)
     top = sorted_cells[:top_n]
 
-    return jsonify({
+    return {
         "category": category,
         "top_n":    top_n,
         "data": [
@@ -327,23 +285,119 @@ def summary_by_area():
             }
             for c in top
         ]
-    })
+    }
+
+
+@app.post("/api/v1/ai/suggestions")
+async def ai_suggestions(req: AISuggestionRequest):
+    """
+    AI-powered urban planning suggestions using Google Gemini.
+    Analyses underserved areas and recommends facility placement strategies.
+    """
+    if not GEMINI_KEY:
+        raise HTTPException(503, "Gemini API key not configured. Add GEMINI_API_KEY to .env")
+
+    # Load the data we need
+    underserved_data = load("underserved_areas.json")
+    stats            = load("city_stats.json")
+    if not underserved_data or not stats:
+        raise HTTPException(404, "Processed data not found. Run process_data.py first.")
+
+    # Pick top-N most underserved cells relevant to the facility
+    facility = req.facility_type
+    lacks_key = f"lacks_{facility}"
+
+    top_cells = [c for c in underserved_data if c.get(lacks_key)][:req.top_n]
+
+    if not top_cells:
+        return {"suggestions": [], "summary": f"No underserved areas found for {facility}."}
+
+    # Build a compact context for Gemini
+    ic  = stats["infrastructure_counts"]
+    uc  = stats["underserved_cells"]
+
+    cell_summaries = []
+    for i, c in enumerate(top_cells, 1):
+        cell_summaries.append(
+            f"{i}. Grid cell {c['cell_id']} at ({c['center_lat']:.4f}°N, {c['center_lon']:.4f}°E) — "
+            f"nearest {facility}: {c.get(f'nearest_{facility}_km', '?')}km | "
+            f"nearby hospitals: {c.get('hospitals',0)}, schools: {c.get('schools',0)}, "
+            f"buildings: {c.get('buildings',0)} (population proxy)"
+        )
+
+    prompt = f"""You are an expert urban infrastructure planner analysing Bangalore, India.
+
+CITY CONTEXT:
+- Total mapped hospitals & clinics: {ic['hospitals']}
+- Total schools & colleges: {ic['schools']}
+- Total pharmacies: {ic['pharmacies']}
+- {uc['pct_underserved']}% of the city grid is underserved by at least one facility type
+- Grid cells lacking {facility} within coverage radius: {uc.get(f'no_{facility}_within_3km', uc.get('no_hospital_within_3km', '?'))}
+
+TOP {len(top_cells)} MOST UNDERSERVED AREAS (lacking {facility}):
+{chr(10).join(cell_summaries)}
+
+TASK:
+For each of the top {min(3, len(top_cells))} areas above, provide a structured suggestion in this EXACT JSON format (respond with ONLY a JSON array, no markdown):
+[
+  {{
+    "rank": 1,
+    "area_name": "descriptive name based on coordinates",
+    "coordinates": {{"lat": 12.xxxx, "lon": 77.xxxx}},
+    "cell_id": "xx_xx",
+    "gap_km": X.X,
+    "priority": "Critical | High | Medium",
+    "recommendation": "Specific facility recommendation (e.g. '150-bed district hospital')",
+    "reasoning": "2-3 sentence explanation of why this location is strategically ideal",
+    "estimated_population_served": "X,000 - Y,000 residents",
+    "quick_wins": ["actionable step 1", "actionable step 2"],
+    "smart_impact_score": X.X
+  }}
+]
+
+The smart_impact_score (0-10) should estimate the ratio of population served to implementation cost.
+Area names should reference actual Bangalore neighbourhoods near those coordinates.
+"""
+
+    try:
+        model    = genai.GenerativeModel("gemini-2.5-flash")
+        response = model.generate_content(prompt)
+        text     = response.text.strip()
+
+        # Strip any markdown fences if Gemini adds them
+        if text.startswith("```"):
+            text = text.split("```")[1]
+            if text.startswith("json"):
+                text = text[4:]
+        text = text.strip()
+
+        suggestions = json.loads(text)
+
+        return {
+            "facility_type":          facility,
+            "city":                   "Bangalore",
+            "total_underserved_cells": len(top_cells),
+            "suggestions":            suggestions,
+            "model":                  "gemini-1.5-flash",
+        }
+
+    except json.JSONDecodeError:
+        # If Gemini doesn't return pure JSON, return raw text
+        return {
+            "facility_type": facility,
+            "raw_response":  text,
+            "error":         "Could not parse structured JSON from Gemini. Raw response included.",
+        }
+    except Exception as e:
+        raise HTTPException(500, f"Gemini API error: {str(e)}")
 
 
 # ─── MAIN ─────────────────────────────────────────────────────────────────────
-
 if __name__ == "__main__":
+    import uvicorn
     print("=" * 55)
-    print("  Urban Intelligence Dashboard — Backend API")
-    print("  Running at: http://localhost:5000")
+    print("  Urban Intelligence Dashboard — FastAPI Backend")
+    print("  City: Bangalore")
+    print("  Docs: http://localhost:8000/docs")
     print("=" * 55)
-    print("\n  Available endpoints:")
-    print("  GET /api/health")
-    print("  GET /api/city/stats")
-    print("  GET /api/infrastructure/<category>")
-    print("  GET /api/grid")
-    print("  GET /api/underserved?type=hospital")
-    print("  GET /api/query/underserved?facility=hospital&radius_km=3")
-    print("  GET /api/summary/by-area?category=hospitals")
-    print()
-    app.run(debug=True, port=5000)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

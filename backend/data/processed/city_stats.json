@@ -1,19 +1,19 @@
 {
-  "city": "Pune",
+  "city": "Bangalore",
   "bbox": {
-    "south": 18.4,
-    "west": 73.75,
-    "north": 18.65,
-    "east": 73.98
+    "south": 12.834,
+    "west": 77.461,
+    "north": 13.139,
+    "east": 77.779
   },
   "grid_size": "25x25",
   "total_grid_cells": 625,
   "infrastructure_counts": {
-    "hospitals": 1064,
-    "schools": 375,
-    "traffic_nodes": 1060,
-    "buildings": 230583,
-    "pharmacies": 200
+    "hospitals": 2052,
+    "schools": 1755,
+    "traffic_nodes": 5591,
+    "buildings": 746783,
+    "pharmacies": 1055
   },
   "coverage_thresholds_km": {
     "hospital": 3.0,
@@ -21,10 +21,10 @@
     "pharmacy": 1.5
   },
   "underserved_cells": {
-    "no_hospital_within_3km": 33,
-    "no_school_within_2km": 97,
-    "no_pharmacy_within_1_5km": 296,
-    "any_underserved": 301,
-    "pct_underserved": 48.2
+    "no_hospital_within_3km": 63,
+    "no_school_within_2km": 23,
+    "no_pharmacy_within_1_5km": 257,
+    "any_underserved": 258,
+    "pct_underserved": 41.3
   }
 }

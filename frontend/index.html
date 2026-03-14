@@ -1,261 +1,299 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Urban Intelligence — Pune</title>
-
-  <!-- Leaflet -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Urban Intelligence — Bangalore</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-
-  <!-- Chart.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-
-  <!-- App Styles -->
-  <link rel="stylesheet" href="css/styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/styles.css"/>
 </head>
 <body>
 
-  <!-- ── LOADER ─────────────────────────────────────────────────── -->
-  <div id="loader">
-    <div class="lhex"></div>
-    <div class="lsteps">
-      <div class="lstep" id="ls0"><div class="ldot2"></div>Connecting to backend</div>
-      <div class="lstep" id="ls1"><div class="ldot2"></div>Loading city statistics</div>
-      <div class="lstep" id="ls2"><div class="ldot2"></div>Fetching hospitals &amp; clinics</div>
-      <div class="lstep" id="ls3"><div class="ldot2"></div>Fetching schools &amp; colleges</div>
-      <div class="lstep" id="ls4"><div class="ldot2"></div>Fetching traffic nodes</div>
-      <div class="lstep" id="ls5"><div class="ldot2"></div>Fetching pharmacies</div>
-      <div class="lstep" id="ls6"><div class="ldot2"></div>Computing underserved areas</div>
-      <div class="lstep" id="ls7"><div class="ldot2"></div>Dashboard ready</div>
+<!-- ── LOADER ─────────────────────────────────────────── -->
+<div id="loader">
+  <div class="lhex"></div>
+  <div class="lsteps">
+    <div class="lstep" id="ls0"><div class="ldot2"></div>Connecting to backend</div>
+    <div class="lstep" id="ls1"><div class="ldot2"></div>Loading city statistics</div>
+    <div class="lstep" id="ls2"><div class="ldot2"></div>Fetching hospitals &amp; clinics</div>
+    <div class="lstep" id="ls3"><div class="ldot2"></div>Fetching schools &amp; colleges</div>
+    <div class="lstep" id="ls4"><div class="ldot2"></div>Fetching traffic nodes</div>
+    <div class="lstep" id="ls5"><div class="ldot2"></div>Fetching pharmacies</div>
+    <div class="lstep" id="ls6"><div class="ldot2"></div>Computing underserved areas</div>
+    <div class="lstep" id="ls7"><div class="ldot2"></div>Dashboard ready</div>
+  </div>
+</div>
+
+<!-- ── TOPBAR ─────────────────────────────────────────── -->
+<div id="topbar">
+  <div class="brand">
+    <div class="brand-hex"></div>
+    <div>
+      <div class="brand-name">URBAN INTELLIGENCE</div>
+      <div class="brand-sub">BANGALORE · INFRASTRUCTURE ANALYSIS</div>
     </div>
   </div>
 
-  <!-- ── TOPBAR ─────────────────────────────────────────────────── -->
-  <div id="topbar">
-    <div class="brand">
-      <div class="brand-hex"></div>
-      <div>
-        <div class="brand-name">URBAN INTELLIGENCE</div>
-        <div class="brand-sub">PUNE · INFRASTRUCTURE ANALYSIS</div>
-      </div>
-    </div>
-
-    <div class="tabs">
-      <button class="tab active" id="tab-map" onclick="switchView('map', this)">🗺&nbsp; Map Explorer</button>
-      <button class="tab" id="tab-analytics" onclick="switchView('analytics', this)">📊&nbsp; Analytics</button>
-    </div>
-
-    <div class="kpis">
-      <div class="kpi"><span class="kpi-v" id="kh" style="color:var(--H)">—</span><span class="kpi-l">Hospitals</span></div>
-      <div class="kpi"><span class="kpi-v" id="ks" style="color:var(--S)">—</span><span class="kpi-l">Schools</span></div>
-      <div class="kpi"><span class="kpi-v" id="kt" style="color:var(--T)">—</span><span class="kpi-l">Traffic Nodes</span></div>
-      <div class="kpi"><span class="kpi-v" id="ku" style="color:var(--U)">—</span><span class="kpi-l">Underserved</span></div>
-    </div>
-
-    <div class="live"><div class="live-dot"></div>LIVE</div>
+  <div class="tabs">
+    <button class="tab active" id="tab-map"       onclick="switchView('map',this)">🗺&nbsp; Map Explorer</button>
+    <button class="tab"        id="tab-analytics"  onclick="switchView('analytics',this)">📊&nbsp; Analytics</button>
+    <button class="tab"        id="tab-ai"         onclick="switchView('ai',this)">✨&nbsp; AI Suggestions</button>
   </div>
 
-  <!-- ── MAIN SHELL ──────────────────────────────────────────────── -->
-  <div id="shell">
+  <div class="kpis">
+    <div class="kpi"><span class="kpi-v" id="kh" style="color:var(--H)">—</span><span class="kpi-l">Hospitals</span></div>
+    <div class="kpi"><span class="kpi-v" id="ks" style="color:var(--S)">—</span><span class="kpi-l">Schools</span></div>
+    <div class="kpi"><span class="kpi-v" id="kt" style="color:var(--T)">—</span><span class="kpi-l">Traffic Nodes</span></div>
+    <div class="kpi"><span class="kpi-v" id="ku" style="color:var(--U)">—</span><span class="kpi-l">Underserved</span></div>
+  </div>
 
-    <!-- SIDEBAR -->
-    <div id="sidebar">
-      <div class="sb-inner">
+  <div class="live"><div class="live-dot"></div>LIVE</div>
+</div>
 
-        <div class="sb-section">
-          <div class="sb-label">Map Layers</div>
-          <div class="layer-row on" id="lr-hospitals" onclick="toggleLayer('hospitals')">
-            <div class="layer-pip" style="background:var(--H)"></div>
-            <div class="layer-name">Hospitals &amp; Clinics</div>
-            <div class="layer-n" id="ln-hospitals">—</div>
-            <div class="layer-toggle on" id="lt-hospitals"></div>
-          </div>
-          <div class="layer-row on" id="lr-schools" onclick="toggleLayer('schools')">
-            <div class="layer-pip" style="background:var(--S)"></div>
-            <div class="layer-name">Schools &amp; Colleges</div>
-            <div class="layer-n" id="ln-schools">—</div>
-            <div class="layer-toggle on" id="lt-schools"></div>
-          </div>
-          <div class="layer-row on" id="lr-traffic_nodes" onclick="toggleLayer('traffic_nodes')">
-            <div class="layer-pip" style="background:var(--T)"></div>
-            <div class="layer-name">Traffic Nodes</div>
-            <div class="layer-n" id="ln-traffic_nodes">—</div>
-            <div class="layer-toggle on" id="lt-traffic_nodes"></div>
-          </div>
-          <div class="layer-row" id="lr-pharmacies" onclick="toggleLayer('pharmacies')">
-            <div class="layer-pip" style="background:var(--P)"></div>
-            <div class="layer-name">Pharmacies</div>
-            <div class="layer-n" id="ln-pharmacies">—</div>
-            <div class="layer-toggle" id="lt-pharmacies"></div>
-          </div>
-          <div class="layer-row" id="lr-underserved" onclick="toggleLayer('underserved')">
-            <div class="layer-pip" style="background:var(--U)"></div>
-            <div class="layer-name">Underserved Areas</div>
-            <div class="layer-n" id="ln-underserved">—</div>
-            <div class="layer-toggle" id="lt-underserved"></div>
-          </div>
+<!-- ── SHELL ──────────────────────────────────────────── -->
+<div id="shell">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sb-inner">
+
+      <div class="sb-section">
+        <div class="sb-label">Map Layers</div>
+        <div class="layer-row on" id="lr-hospitals" onclick="toggleLayer('hospitals')">
+          <div class="layer-pip" style="background:var(--H)"></div>
+          <div class="layer-name">Hospitals &amp; Clinics</div>
+          <div class="layer-n" id="ln-hospitals">—</div>
+          <div class="layer-toggle on" id="lt-hospitals"></div>
         </div>
-
-        <div class="sb-section">
-          <div class="sb-label">Coverage Metrics</div>
-          <div class="mini-cards">
-            <div class="mini-card" id="mc0">
-              <div class="mc-val" style="color:var(--H)" id="mc-h">—</div>
-              <div class="mc-lbl">Hospital/100 cells</div>
-              <div class="mc-bar"><div class="mc-fill" id="mcf-h" style="background:var(--H);width:0%"></div></div>
-            </div>
-            <div class="mini-card" id="mc1">
-              <div class="mc-val" style="color:var(--S)" id="mc-s">—</div>
-              <div class="mc-lbl">School/100 cells</div>
-              <div class="mc-bar"><div class="mc-fill" id="mcf-s" style="background:var(--S);width:0%"></div></div>
-            </div>
-            <div class="mini-card" id="mc2">
-              <div class="mc-val" style="color:var(--U)" id="mc-u">—</div>
-              <div class="mc-lbl">% Underserved</div>
-              <div class="mc-bar"><div class="mc-fill" id="mcf-u" style="background:var(--U);width:0%"></div></div>
-            </div>
-            <div class="mini-card" id="mc3">
-              <div class="mc-val" style="color:var(--P)" id="mc-p">—</div>
-              <div class="mc-lbl">Pharmacies</div>
-              <div class="mc-bar"><div class="mc-fill" id="mcf-p" style="background:var(--P);width:0%"></div></div>
-            </div>
-          </div>
+        <div class="layer-row on" id="lr-schools" onclick="toggleLayer('schools')">
+          <div class="layer-pip" style="background:var(--S)"></div>
+          <div class="layer-name">Schools &amp; Colleges</div>
+          <div class="layer-n" id="ln-schools">—</div>
+          <div class="layer-toggle on" id="lt-schools"></div>
         </div>
-
-        <div class="sb-section">
-          <div class="sb-label">Underserved Query</div>
-          <div class="qbox">
-            <div class="qbox-title">⚡ Find Coverage Gaps</div>
-            <div class="qrow">
-              <select id="q-fac">
-                <option value="hospital">🏥 Hospital</option>
-                <option value="school">🏫 School</option>
-                <option value="pharmacy">💊 Pharmacy</option>
-              </select>
-            </div>
-            <div class="qrow">
-              <input type="number" id="q-km" value="3" min="0.5" max="20" step="0.5" style="flex:none;width:75px" />
-              <select style="font-size:10px"><option>km radius</option></select>
-            </div>
-            <button class="qbtn" id="qbtn" onclick="runQuery()">FIND UNDERSERVED AREAS →</button>
-            <div class="qresult" id="qresult">Select a facility and radius, then click Find.</div>
-          </div>
+        <div class="layer-row on" id="lr-traffic_nodes" onclick="toggleLayer('traffic_nodes')">
+          <div class="layer-pip" style="background:var(--T)"></div>
+          <div class="layer-name">Traffic Nodes</div>
+          <div class="layer-n" id="ln-traffic_nodes">—</div>
+          <div class="layer-toggle on" id="lt-traffic_nodes"></div>
         </div>
-
-      </div>
-    </div><!-- /sidebar -->
-
-    <!-- CONTENT -->
-    <div id="content">
-
-      <!-- MAP VIEW -->
-      <div class="view active" id="map-view">
-        <div id="map"></div>
-        <div class="mob" id="mob"></div>
-        <div class="map-legend">
-          <div class="lrow"><div class="ldot" style="background:var(--H)"></div>Hospital / Clinic</div>
-          <div class="lrow"><div class="ldot" style="background:var(--S)"></div>School / College</div>
-          <div class="lrow"><div class="ldot" style="background:var(--T)"></div>Traffic Node</div>
-          <div class="lrow"><div class="ldot" style="background:var(--P)"></div>Pharmacy</div>
-          <div class="lrow"><div class="ldot" style="background:var(--U);border-radius:2px"></div>Underserved Zone</div>
+        <div class="layer-row" id="lr-pharmacies" onclick="toggleLayer('pharmacies')">
+          <div class="layer-pip" style="background:var(--P)"></div>
+          <div class="layer-name">Pharmacies</div>
+          <div class="layer-n" id="ln-pharmacies">—</div>
+          <div class="layer-toggle" id="lt-pharmacies"></div>
+        </div>
+        <div class="layer-row" id="lr-underserved" onclick="toggleLayer('underserved')">
+          <div class="layer-pip" style="background:var(--U)"></div>
+          <div class="layer-name">Underserved Areas</div>
+          <div class="layer-n" id="ln-underserved">—</div>
+          <div class="layer-toggle" id="lt-underserved"></div>
         </div>
       </div>
 
-      <!-- ANALYTICS VIEW -->
-      <div class="view" id="analytics-view">
-
-        <div class="ag">
-          <div class="ak" id="ak0">
-            <div class="ak-icon">🏥</div>
-            <div class="ak-val" style="color:var(--H)" id="ak-h">—</div>
-            <div class="ak-lbl">Hospitals &amp; Clinics</div>
-            <div class="ak-badge" style="background:rgba(56,189,248,.1);color:var(--cyan)">Healthcare layer</div>
+      <div class="sb-section">
+        <div class="sb-label">Coverage Metrics</div>
+        <div class="mini-cards">
+          <div class="mini-card" id="mc0">
+            <div class="mc-val" style="color:var(--H)" id="mc-h">—</div>
+            <div class="mc-lbl">Hospital/100 cells</div>
+            <div class="mc-bar"><div class="mc-fill" id="mcf-h" style="background:var(--H);width:0%"></div></div>
           </div>
-          <div class="ak" id="ak1">
-            <div class="ak-icon">🏫</div>
-            <div class="ak-val" style="color:var(--S)" id="ak-s">—</div>
-            <div class="ak-lbl">Schools &amp; Colleges</div>
-            <div class="ak-badge" style="background:rgba(251,191,36,.1);color:var(--yellow)">Education layer</div>
+          <div class="mini-card" id="mc1">
+            <div class="mc-val" style="color:var(--S)" id="mc-s">—</div>
+            <div class="mc-lbl">School/100 cells</div>
+            <div class="mc-bar"><div class="mc-fill" id="mcf-s" style="background:var(--S);width:0%"></div></div>
           </div>
-          <div class="ak" id="ak2">
-            <div class="ak-icon">🚦</div>
-            <div class="ak-val" style="color:var(--T)" id="ak-t">—</div>
-            <div class="ak-lbl">Traffic Nodes</div>
-            <div class="ak-badge" style="background:rgba(248,113,113,.1);color:var(--red)">Mobility layer</div>
+          <div class="mini-card" id="mc2">
+            <div class="mc-val" style="color:var(--U)" id="mc-u">—</div>
+            <div class="mc-lbl">% Underserved</div>
+            <div class="mc-bar"><div class="mc-fill" id="mcf-u" style="background:var(--U);width:0%"></div></div>
           </div>
-          <div class="ak" id="ak3">
-            <div class="ak-icon">⚠️</div>
-            <div class="ak-val" style="color:var(--U)" id="ak-u">—</div>
-            <div class="ak-lbl">Underserved Cells</div>
-            <div class="ak-badge" id="ak-upct" style="background:rgba(244,63,94,.1);color:var(--U)">—% of city</div>
+          <div class="mini-card" id="mc3">
+            <div class="mc-val" style="color:var(--P)" id="mc-p">—</div>
+            <div class="mc-lbl">Pharmacies</div>
+            <div class="mc-bar"><div class="mc-fill" id="mcf-p" style="background:var(--P);width:0%"></div></div>
           </div>
         </div>
+      </div>
 
-        <div class="ins-strip">
-          <div class="ins" id="ins0" style="border-left-color:var(--cyan)">
-            <div class="ins-num" style="color:var(--cyan)" id="ins-h">—</div>
-            <div class="ins-title">Areas lacking hospital within 3km</div>
-            <div class="ins-text">Grid cells where the nearest hospital exceeds 3km — indicating critical healthcare access gaps.</div>
+      <div class="sb-section">
+        <div class="sb-label">Underserved Query</div>
+        <div class="qbox">
+          <div class="qbox-title">⚡ Find Coverage Gaps</div>
+          <div class="qrow">
+            <select id="q-fac">
+              <option value="hospital">🏥 Hospital</option>
+              <option value="school">🏫 School</option>
+              <option value="pharmacy">💊 Pharmacy</option>
+            </select>
           </div>
-          <div class="ins" id="ins1" style="border-left-color:var(--orange)">
-            <div class="ins-num" style="color:var(--orange)" id="ins-s">—</div>
-            <div class="ins-title">Areas lacking school within 2km</div>
-            <div class="ins-text">Zones where students would face long distances to reach the nearest school or college.</div>
+          <div class="qrow">
+            <input type="number" id="q-km" value="3" min="0.5" max="20" step="0.5" style="flex:none;width:75px"/>
+            <select style="font-size:10px"><option>km radius</option></select>
           </div>
-          <div class="ins" id="ins2" style="border-left-color:var(--red)">
-            <div class="ins-num" style="color:var(--red)" id="ins-p">—</div>
-            <div class="ins-title">Areas lacking pharmacy within 1.5km</div>
-            <div class="ins-text">The most widespread gap — a large portion of the city lacks nearby pharmaceutical access.</div>
+          <button class="qbtn" id="qbtn" onclick="runQuery()">FIND UNDERSERVED AREAS →</button>
+          <div class="qresult" id="qresult">Select a facility and radius, then click Find.</div>
+        </div>
+      </div>
+
+    </div>
+  </div><!-- /sidebar -->
+
+  <!-- CONTENT -->
+  <div id="content">
+
+    <!-- MAP VIEW -->
+    <div class="view active" id="map-view">
+      <div id="map"></div>
+      <div class="mob" id="mob"></div>
+      <div class="map-legend">
+        <div class="lrow"><div class="ldot" style="background:var(--H)"></div>Hospital / Clinic</div>
+        <div class="lrow"><div class="ldot" style="background:var(--S)"></div>School / College</div>
+        <div class="lrow"><div class="ldot" style="background:var(--T)"></div>Traffic Node</div>
+        <div class="lrow"><div class="ldot" style="background:var(--P)"></div>Pharmacy</div>
+        <div class="lrow"><div class="ldot" style="background:var(--U);border-radius:2px"></div>Underserved Zone</div>
+        <div class="lrow"><div class="ldot" style="background:var(--purple);border-radius:2px"></div>AI Suggestion</div>
+      </div>
+    </div>
+
+    <!-- ANALYTICS VIEW -->
+    <div class="view" id="analytics-view">
+      <div class="ag">
+        <div class="ak" id="ak0">
+          <div class="ak-icon">🏥</div>
+          <div class="ak-val" style="color:var(--H)" id="ak-h">—</div>
+          <div class="ak-lbl">Hospitals &amp; Clinics</div>
+          <div class="ak-badge" style="background:rgba(56,189,248,.1);color:var(--cyan)">Healthcare layer</div>
+        </div>
+        <div class="ak" id="ak1">
+          <div class="ak-icon">🏫</div>
+          <div class="ak-val" style="color:var(--S)" id="ak-s">—</div>
+          <div class="ak-lbl">Schools &amp; Colleges</div>
+          <div class="ak-badge" style="background:rgba(251,191,36,.1);color:var(--yellow)">Education layer</div>
+        </div>
+        <div class="ak" id="ak2">
+          <div class="ak-icon">🚦</div>
+          <div class="ak-val" style="color:var(--T)" id="ak-t">—</div>
+          <div class="ak-lbl">Traffic Nodes</div>
+          <div class="ak-badge" style="background:rgba(248,113,113,.1);color:var(--red)">Mobility layer</div>
+        </div>
+        <div class="ak" id="ak3">
+          <div class="ak-icon">⚠️</div>
+          <div class="ak-val" style="color:var(--U)" id="ak-u">—</div>
+          <div class="ak-lbl">Underserved Cells</div>
+          <div class="ak-badge" id="ak-upct" style="background:rgba(244,63,94,.1);color:var(--U)">—</div>
+        </div>
+      </div>
+      <div class="ins-strip">
+        <div class="ins" id="ins0" style="border-left-color:var(--cyan)">
+          <div class="ins-num" style="color:var(--cyan)" id="ins-h">—</div>
+          <div class="ins-title">Areas lacking hospital within 3km</div>
+          <div class="ins-text">Grid cells where nearest hospital exceeds 3km — critical healthcare gaps.</div>
+        </div>
+        <div class="ins" id="ins1" style="border-left-color:var(--orange)">
+          <div class="ins-num" style="color:var(--orange)" id="ins-s">—</div>
+          <div class="ins-title">Areas lacking school within 2km</div>
+          <div class="ins-text">Zones where students face long distances to nearest school or college.</div>
+        </div>
+        <div class="ins" id="ins2" style="border-left-color:var(--red)">
+          <div class="ins-num" style="color:var(--red)" id="ins-p">—</div>
+          <div class="ins-title">Areas lacking pharmacy within 1.5km</div>
+          <div class="ins-text">Most widespread gap — large portions lack nearby pharmaceutical access.</div>
+        </div>
+      </div>
+      <div class="cg">
+        <div class="cc w2" id="cc0">
+          <div class="cc-hd"><div><div class="cc-title">Hospital Density by Grid Cell</div><div class="cc-sub">Top 15 areas · raw count</div></div><div class="cc-badge">HOSPITALS</div></div>
+          <div class="cw"><canvas id="ch-hosp"></canvas></div>
+        </div>
+        <div class="cc" id="cc1">
+          <div class="cc-hd"><div><div class="cc-title">Infrastructure Breakdown</div><div class="cc-sub">City-wide totals</div></div><div class="cc-badge">OVERVIEW</div></div>
+          <div class="cw"><canvas id="ch-infra"></canvas></div>
+        </div>
+        <div class="cc w2" id="cc2">
+          <div class="cc-hd"><div><div class="cc-title">School Distribution by Neighbourhood</div><div class="cc-sub">Top 15 grid cells</div></div><div class="cc-badge">SCHOOLS</div></div>
+          <div class="cw"><canvas id="ch-school"></canvas></div>
+        </div>
+        <div class="cc" id="cc3">
+          <div class="cc-hd"><div><div class="cc-title">Underserved Breakdown</div><div class="cc-sub">By missing facility type</div></div><div class="cc-badge">GAPS</div></div>
+          <div class="cw"><canvas id="ch-under"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI SUGGESTIONS VIEW -->
+    <div class="view" id="ai-view">
+
+      <div class="ai-header">
+        <div class="ai-header-text">
+          <div class="ai-title">✨ AI Urban Planning Suggestions</div>
+          <div class="ai-subtitle">
+            Powered by Google Gemini — analyses Bangalore's infrastructure gaps and recommends
+            optimal facility placement strategies with impact scoring.
           </div>
         </div>
+        <div class="ai-controls">
+          <div class="ai-ctrl-group">
+            <div class="ai-ctrl-label">Facility Type</div>
+            <select class="ai-select" id="ai-facility">
+              <option value="hospital">🏥 Hospital</option>
+              <option value="school">🏫 School</option>
+              <option value="pharmacy">💊 Pharmacy</option>
+            </select>
+          </div>
+          <button class="ai-gen-btn" id="ai-btn" onclick="runAISuggestions()">
+            ✨ GENERATE AI SUGGESTIONS
+          </button>
+        </div>
+      </div>
 
-        <div class="cg">
-          <div class="cc w2" id="cc0">
-            <div class="cc-hd">
-              <div><div class="cc-title">Hospital Density by Grid Cell</div><div class="cc-sub">Top 15 areas · raw count</div></div>
-              <div class="cc-badge">HOSPITALS</div>
-            </div>
-            <div class="cw"><canvas id="ch-hosp"></canvas></div>
-          </div>
-          <div class="cc" id="cc1">
-            <div class="cc-hd">
-              <div><div class="cc-title">Infrastructure Breakdown</div><div class="cc-sub">City-wide totals</div></div>
-              <div class="cc-badge">OVERVIEW</div>
-            </div>
-            <div class="cw"><canvas id="ch-infra"></canvas></div>
-          </div>
-          <div class="cc w2" id="cc2">
-            <div class="cc-hd">
-              <div><div class="cc-title">School Distribution by Neighbourhood</div><div class="cc-sub">Top 15 grid cells</div></div>
-              <div class="cc-badge">SCHOOLS</div>
-            </div>
-            <div class="cw"><canvas id="ch-school"></canvas></div>
-          </div>
-          <div class="cc" id="cc3">
-            <div class="cc-hd">
-              <div><div class="cc-title">Underserved Breakdown</div><div class="cc-sub">By missing facility type</div></div>
-              <div class="cc-badge">GAPS</div>
-            </div>
-            <div class="cw"><canvas id="ch-under"></canvas></div>
+      <div class="ai-info-strip">
+        <div class="ai-info-card">
+          <div class="ai-info-icon">🧠</div>
+          <div class="ai-info-text">
+            <div class="ai-info-title">How it works</div>
+            <div class="ai-info-desc">Gemini analyses the top underserved grid cells and generates actionable planning recommendations with reasoning.</div>
           </div>
         </div>
+        <div class="ai-info-card">
+          <div class="ai-info-icon">📍</div>
+          <div class="ai-info-text">
+            <div class="ai-info-title">Show on Map</div>
+            <div class="ai-info-desc">Each suggestion includes a "Show on Map" button that flies you to the recommended location with a marker.</div>
+          </div>
+        </div>
+        <div class="ai-info-card">
+          <div class="ai-info-icon">⚡</div>
+          <div class="ai-info-text">
+            <div class="ai-info-title">Smart Impact Score</div>
+            <div class="ai-info-desc">Each suggestion is scored 0–10 based on estimated population served per unit of implementation cost.</div>
+          </div>
+        </div>
+      </div>
 
-      </div><!-- /analytics-view -->
-    </div><!-- /content -->
-  </div><!-- /shell -->
+      <div id="ai-output">
+        <div class="ai-empty" style="opacity:.5">
+          Select a facility type above and click <strong>Generate AI Suggestions</strong> to begin.
+        </div>
+      </div>
 
-  <!-- ── SCRIPTS (order matters) ────────────────────────────────── -->
-  <script src="js/config.js"></script>
-  <script src="js/map.js"></script>
-  <script src="js/sidebar.js"></script>
-  <script src="js/query.js"></script>
-  <script src="js/charts.js"></script>
-  <script src="js/app.js"></script>
+    </div><!-- /ai-view -->
+
+  </div><!-- /content -->
+</div><!-- /shell -->
+
+<!-- Scripts — order matters -->
+<script src="js/config.js"></script>
+<script src="js/map.js"></script>
+<script src="js/sidebar.js"></script>
+<script src="js/query.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/app.js"></script>
 
 </body>
 </html>

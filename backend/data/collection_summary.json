@@ -1,12 +1,12 @@
 {
-  "city": "Pune",
-  "bbox": "18.40,73.75,18.65,73.98",
+  "city": "Bangalore",
+  "bbox": "12.834,77.461,13.139,77.779",
   "categories": {
-    "hospitals": 1064,
-    "schools": 375,
-    "traffic_nodes": 1060,
-    "buildings": 230699,
-    "pharmacies": 200
+    "hospitals": 2052,
+    "schools": 1758,
+    "traffic_nodes": 5591,
+    "buildings": 746873,
+    "pharmacies": 1055
   },
-  "total_records": 233398
+  "total_records": 757329
 }
