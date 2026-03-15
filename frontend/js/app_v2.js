@@ -58,11 +58,12 @@ window.switchScreen = function(screenId) {
 // ── BOOT SEQUENCE ────────────────────────────────────────────────────────────
 async function boot() {
   try {
-    updateLoader("Checking API health...");
+    console.log("[BOOT] Starting check...");
     await apiFetch(`${API_BASE}/health`);
+    console.log("[BOOT] Health check OK");
 
-    updateLoader("Fetching city statistics...");
     AppState.statsData = await apiFetch(`${API_BASE}/city/stats`);
+    console.log("[BOOT] City stats loaded:", AppState.statsData);
     
     // Populate KPI Cards
     if(document.getElementById('kpi-hospitals')) {
@@ -77,41 +78,22 @@ async function boot() {
       document.getElementById('insight-p').innerText = (AppState.statsData.underserved_cells?.no_pharmacy_within_1_5km || 0) + " Grid Cells";
     }
 
-    updateLoader("Initializing interactive map...");
     // We init the map layers in the background
+    console.log("[BOOT] Loading Map layers...");
     const layers = ["hospitals", "schools", "traffic_nodes", "pharmacies"];
     for (let layer of layers) {
       if(typeof loadLayer === 'function') await loadLayer(layer);
     }
     if(typeof loadUnderserved === 'function') await loadUnderserved();
 
-    updateLoader("Building Analytics Hub...");
+    console.log("[BOOT] Building charts...");
     if(typeof buildCharts === 'function') await buildCharts();
 
-    updateLoader("System Ready");
-    
-    // Hide loader
-    setTimeout(() => {
-      const loader = document.getElementById("loader");
-      if(loader) {
-        loader.classList.add("opacity-0", "pointer-events-none");
-        setTimeout(() => loader.remove(), 300);
-      }
-    }, 500);
+    console.log("[BOOT] System Ready");
 
   } catch (err) {
-    const loader = document.getElementById("loader");
-    if(loader) {
-      loader.innerHTML = `
-        <div class="bg-red-50 border border-red-200 text-red-700 p-6 rounded-xl max-w-md text-center z-[99999] relative shadow-lg">
-          <i data-lucide="alert-triangle" class="w-12 h-12 mx-auto mb-4 text-red-500"></i>
-          <h3 class="text-lg font-bold mb-2">System Error During Boot</h3>
-          <p class="text-sm">Unable to initialize Urban Dashboard. Backend: <strong>${typeof API_BASE !== 'undefined' ? API_BASE : 'Unknown'}</strong>.</p>
-          <p class="text-xs mt-4 opacity-70 bg-red-100 p-2 rounded text-left overflow-auto break-all font-mono">${err.stack || err.message}</p>
-        </div>`;
-      if(typeof lucide !== 'undefined') lucide.createIcons();
-    }
-    console.error("Boot failed:", err);
+    console.error("[BOOT ERROR] Boot failed:", err);
+    document.body.innerHTML += `<div style="position:fixed;top:0;left:0;right:0;background:red;color:white;padding:20px;z-index:9999999;font-size:20px;">CRASH: ${err.message}</div>`;
   }
 }
 

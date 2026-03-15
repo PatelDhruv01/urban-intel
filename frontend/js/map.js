@@ -6,10 +6,15 @@
 const map = L.map("map", {
   center: CITY_CENTER, zoom: CITY_ZOOM, zoomControl: false,
 });
-L.control.zoom({ position: "bottomleft" }).addTo(map);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: "© OpenStreetMap contributors", maxZoom: 19,
+L.control.zoom({ position: "bottomright" }).addTo(map);
+
+// Premium Light Street Map
+L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+  attribution: "© OpenStreetMap, © CartoDB", maxZoom: 19,
 }).addTo(map);
+
+// Keep a global reference for the size invalidator in app.js
+window.UID_MAP = map;
 
 const LG = {
   hospitals:    L.layerGroup().addTo(map),

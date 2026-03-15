@@ -1,12 +1,27 @@
+# Python Environments
+.venv/
+.venv312/
 venv/
 venv312/
-.venv312/
+
+# Python Cache
 __pycache__/
 *.pyc
 *.pyo
+
+# Environment Variables
 .env
+
+# Backend Data
 backend/data/
-*.json
 !backend/data/.gitkeep
+
+# OS specific
 .DS_Store
+
+# Frontend Dependencies
 node_modules/
+
+# AI Coding Assistants (Antigravity)
+.agent/
+.gemini/

@@ -32,9 +32,3 @@ const MARKER_RADIUS = {
   pharmacies:    4,
 };
 
-// ── SHARED APP STATE ──────────────────────────────────────────────────────────
-const AppState = {
-  statsData:      null,
-  analyticsBuilt: false,
-  aiBuilt:        false,
-};

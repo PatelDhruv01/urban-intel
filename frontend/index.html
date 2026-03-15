@@ -1,299 +1,439 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Urban Intelligence — Bangalore</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Urban Intelligence — Advanced</title>
+  
+  <!-- Map: Leaflet & Heatmap -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="css/styles.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+  
+  <!-- Charts: Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Icons: Lucide -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Typography: Pro Max Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Fira+Sans:wght@300;400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- UI/UX Pro Max Tailwind Configuration (OLED Dark Theme) -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Fira Sans"', 'sans-serif'],
+            mono: ['"Fira Code"', 'monospace'],
+            inter: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            primary: '#1E40AF',
+            secondary: '#3B82F6',
+            cta: '#F59E0B',
+            surface: '#020617',
+            background: '#0f172a',
+            accent: {
+              hospital: '#22d3ee',
+              school: '#f59e0b',
+              traffic: '#f43f5e',
+              pharmacy: '#a855f7',
+              underserved: '#ec4899',
+            }
+          },
+          boxShadow: {
+            'card': '0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.2)',
+            'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 0 20px rgba(34, 211, 238, 0.1)',
+            'glow-cyan': '0 0 15px rgba(34, 211, 238, 0.3)',
+            'glow-amber': '0 0 15px rgba(245, 158, 11, 0.3)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Dark scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #020617; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    
+    @keyframes marquee_20s_linear_infinite {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+    
+    /* Leaflet Dark Overrides */
+    .leaflet-container { background: #020617; outline: none !important;}
+    .leaflet-bar a { background-color: #0f172a !important; color: #94a3b8 !important; border-bottom-color: #1e293b !important; }
+    .leaflet-bar a:hover { background-color: #1e293b !important; color: #38bdf8 !important;}
+    .leaflet-popup-content-wrapper { background-color: #0f172a; color: #f8fafc; border: 1px solid #334155; border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.8); padding: 0;}
+    .leaflet-popup-content { margin: 12px; font-family: 'Fira Sans', sans-serif;}
+    .leaflet-popup-tip { background: #0f172a; border-top: 1px solid #334155; border-left: 1px solid #334155; }
+    .custom-div-icon { background:transparent; border:none; }
+    
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+  </style>
 </head>
-<body>
+<body class="bg-surface text-slate-300 font-sans h-screen flex overflow-hidden antialiased selection:bg-cyan-500/30">
 
-<!-- ── LOADER ─────────────────────────────────────────── -->
-<div id="loader">
-  <div class="lhex"></div>
-  <div class="lsteps">
-    <div class="lstep" id="ls0"><div class="ldot2"></div>Connecting to backend</div>
-    <div class="lstep" id="ls1"><div class="ldot2"></div>Loading city statistics</div>
-    <div class="lstep" id="ls2"><div class="ldot2"></div>Fetching hospitals &amp; clinics</div>
-    <div class="lstep" id="ls3"><div class="ldot2"></div>Fetching schools &amp; colleges</div>
-    <div class="lstep" id="ls4"><div class="ldot2"></div>Fetching traffic nodes</div>
-    <div class="lstep" id="ls5"><div class="ldot2"></div>Fetching pharmacies</div>
-    <div class="lstep" id="ls6"><div class="ldot2"></div>Computing underserved areas</div>
-    <div class="lstep" id="ls7"><div class="ldot2"></div>Dashboard ready</div>
-  </div>
-</div>
-
-<!-- ── TOPBAR ─────────────────────────────────────────── -->
-<div id="topbar">
-  <div class="brand">
-    <div class="brand-hex"></div>
+  <!-- GLOBAL SIDEBAR (OLED Dark) -->
+  <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between hidden md:flex z-50 shadow-xl relative backdrop-blur-md bg-opacity-90">
     <div>
-      <div class="brand-name">URBAN INTELLIGENCE</div>
-      <div class="brand-sub">BANGALORE · INFRASTRUCTURE ANALYSIS</div>
+      <div class="p-6 border-b border-slate-800 mb-4">
+        <h1 class="text-2xl font-bold text-slate-50 tracking-tight flex items-center gap-2 font-mono">
+          <i data-lucide="cpu" class="text-cyan-400 h-6 w-6"></i>
+          URBAN INTEL
+        </h1>
+        <p class="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-mono">Sys.Grid // Bangalore</p>
+      </div>
+      
+      <nav class="px-4 space-y-2">
+        <button onclick="switchScreen('analytics')" id="nav-analytics" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-glow-cyan">
+          <i data-lucide="activity" class="w-5 h-5"></i>
+          Telemetry Hub
+        </button>
+        <button onclick="switchScreen('map')" id="nav-map" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-slate-400 border border-transparent hover:bg-slate-800 hover:text-slate-100 hover:border-slate-700">
+          <i data-lucide="map" class="w-5 h-5"></i>
+          Spatial Explorer
+        </button>
+        <button onclick="switchScreen('ai')" id="nav-ai" class="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 text-slate-400 border border-transparent hover:bg-slate-800 hover:text-slate-100 hover:border-slate-700">
+          <i data-lucide="terminal" class="w-5 h-5 text-amber-500"></i>
+          AI Strategist
+        </button>
+      </nav>
     </div>
-  </div>
-
-  <div class="tabs">
-    <button class="tab active" id="tab-map"       onclick="switchView('map',this)">🗺&nbsp; Map Explorer</button>
-    <button class="tab"        id="tab-analytics"  onclick="switchView('analytics',this)">📊&nbsp; Analytics</button>
-    <button class="tab"        id="tab-ai"         onclick="switchView('ai',this)">✨&nbsp; AI Suggestions</button>
-  </div>
-
-  <div class="kpis">
-    <div class="kpi"><span class="kpi-v" id="kh" style="color:var(--H)">—</span><span class="kpi-l">Hospitals</span></div>
-    <div class="kpi"><span class="kpi-v" id="ks" style="color:var(--S)">—</span><span class="kpi-l">Schools</span></div>
-    <div class="kpi"><span class="kpi-v" id="kt" style="color:var(--T)">—</span><span class="kpi-l">Traffic Nodes</span></div>
-    <div class="kpi"><span class="kpi-v" id="ku" style="color:var(--U)">—</span><span class="kpi-l">Underserved</span></div>
-  </div>
-
-  <div class="live"><div class="live-dot"></div>LIVE</div>
-</div>
-
-<!-- ── SHELL ──────────────────────────────────────────── -->
-<div id="shell">
-
-  <!-- SIDEBAR -->
-  <div id="sidebar">
-    <div class="sb-inner">
-
-      <div class="sb-section">
-        <div class="sb-label">Map Layers</div>
-        <div class="layer-row on" id="lr-hospitals" onclick="toggleLayer('hospitals')">
-          <div class="layer-pip" style="background:var(--H)"></div>
-          <div class="layer-name">Hospitals &amp; Clinics</div>
-          <div class="layer-n" id="ln-hospitals">—</div>
-          <div class="layer-toggle on" id="lt-hospitals"></div>
-        </div>
-        <div class="layer-row on" id="lr-schools" onclick="toggleLayer('schools')">
-          <div class="layer-pip" style="background:var(--S)"></div>
-          <div class="layer-name">Schools &amp; Colleges</div>
-          <div class="layer-n" id="ln-schools">—</div>
-          <div class="layer-toggle on" id="lt-schools"></div>
-        </div>
-        <div class="layer-row on" id="lr-traffic_nodes" onclick="toggleLayer('traffic_nodes')">
-          <div class="layer-pip" style="background:var(--T)"></div>
-          <div class="layer-name">Traffic Nodes</div>
-          <div class="layer-n" id="ln-traffic_nodes">—</div>
-          <div class="layer-toggle on" id="lt-traffic_nodes"></div>
-        </div>
-        <div class="layer-row" id="lr-pharmacies" onclick="toggleLayer('pharmacies')">
-          <div class="layer-pip" style="background:var(--P)"></div>
-          <div class="layer-name">Pharmacies</div>
-          <div class="layer-n" id="ln-pharmacies">—</div>
-          <div class="layer-toggle" id="lt-pharmacies"></div>
-        </div>
-        <div class="layer-row" id="lr-underserved" onclick="toggleLayer('underserved')">
-          <div class="layer-pip" style="background:var(--U)"></div>
-          <div class="layer-name">Underserved Areas</div>
-          <div class="layer-n" id="ln-underserved">—</div>
-          <div class="layer-toggle" id="lt-underserved"></div>
-        </div>
-      </div>
-
-      <div class="sb-section">
-        <div class="sb-label">Coverage Metrics</div>
-        <div class="mini-cards">
-          <div class="mini-card" id="mc0">
-            <div class="mc-val" style="color:var(--H)" id="mc-h">—</div>
-            <div class="mc-lbl">Hospital/100 cells</div>
-            <div class="mc-bar"><div class="mc-fill" id="mcf-h" style="background:var(--H);width:0%"></div></div>
-          </div>
-          <div class="mini-card" id="mc1">
-            <div class="mc-val" style="color:var(--S)" id="mc-s">—</div>
-            <div class="mc-lbl">School/100 cells</div>
-            <div class="mc-bar"><div class="mc-fill" id="mcf-s" style="background:var(--S);width:0%"></div></div>
-          </div>
-          <div class="mini-card" id="mc2">
-            <div class="mc-val" style="color:var(--U)" id="mc-u">—</div>
-            <div class="mc-lbl">% Underserved</div>
-            <div class="mc-bar"><div class="mc-fill" id="mcf-u" style="background:var(--U);width:0%"></div></div>
-          </div>
-          <div class="mini-card" id="mc3">
-            <div class="mc-val" style="color:var(--P)" id="mc-p">—</div>
-            <div class="mc-lbl">Pharmacies</div>
-            <div class="mc-bar"><div class="mc-fill" id="mcf-p" style="background:var(--P);width:0%"></div></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="sb-section">
-        <div class="sb-label">Underserved Query</div>
-        <div class="qbox">
-          <div class="qbox-title">⚡ Find Coverage Gaps</div>
-          <div class="qrow">
-            <select id="q-fac">
-              <option value="hospital">🏥 Hospital</option>
-              <option value="school">🏫 School</option>
-              <option value="pharmacy">💊 Pharmacy</option>
-            </select>
-          </div>
-          <div class="qrow">
-            <input type="number" id="q-km" value="3" min="0.5" max="20" step="0.5" style="flex:none;width:75px"/>
-            <select style="font-size:10px"><option>km radius</option></select>
-          </div>
-          <button class="qbtn" id="qbtn" onclick="runQuery()">FIND UNDERSERVED AREAS →</button>
-          <div class="qresult" id="qresult">Select a facility and radius, then click Find.</div>
-        </div>
-      </div>
-
-    </div>
-  </div><!-- /sidebar -->
-
-  <!-- CONTENT -->
-  <div id="content">
-
-    <!-- MAP VIEW -->
-    <div class="view active" id="map-view">
-      <div id="map"></div>
-      <div class="mob" id="mob"></div>
-      <div class="map-legend">
-        <div class="lrow"><div class="ldot" style="background:var(--H)"></div>Hospital / Clinic</div>
-        <div class="lrow"><div class="ldot" style="background:var(--S)"></div>School / College</div>
-        <div class="lrow"><div class="ldot" style="background:var(--T)"></div>Traffic Node</div>
-        <div class="lrow"><div class="ldot" style="background:var(--P)"></div>Pharmacy</div>
-        <div class="lrow"><div class="ldot" style="background:var(--U);border-radius:2px"></div>Underserved Zone</div>
-        <div class="lrow"><div class="ldot" style="background:var(--purple);border-radius:2px"></div>AI Suggestion</div>
+    
+    <div class="p-4 border-t border-slate-800">
+      <div class="flex items-center gap-2 text-xs text-cyan-400 font-mono bg-slate-950 px-3 py-2 rounded-md border border-slate-800">
+        <span class="relative flex h-2 w-2">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+        </span>
+        SYS.ONLINE
       </div>
     </div>
+  </aside>
 
-    <!-- ANALYTICS VIEW -->
-    <div class="view" id="analytics-view">
-      <div class="ag">
-        <div class="ak" id="ak0">
-          <div class="ak-icon">🏥</div>
-          <div class="ak-val" style="color:var(--H)" id="ak-h">—</div>
-          <div class="ak-lbl">Hospitals &amp; Clinics</div>
-          <div class="ak-badge" style="background:rgba(56,189,248,.1);color:var(--cyan)">Healthcare layer</div>
+  <!-- MAIN CONTENT AREA -->
+  <main class="flex-1 relative h-full flex flex-col bg-surface">
+    
+    <header class="md:hidden bg-slate-900 border-b border-slate-800 p-4 flex justify-between items-center shadow-md z-50 relative">
+      <h1 class="text-lg font-bold text-slate-50 flex items-center gap-2 font-mono">
+        <i data-lucide="cpu" class="text-cyan-400 h-5 w-5"></i> URBAN INTEL
+      </h1>
+      <button class="p-2 text-slate-400 hover:bg-slate-800 rounded-lg transition-colors">
+        <i data-lucide="menu" class="w-6 h-6"></i>
+      </button>
+    </header>
+
+    <div class="flex-1 relative overflow-hidden">
+      
+      <!-- SCREEN 1: ANALYTICS HUB -->
+      <section id="screen-analytics" class="absolute inset-0 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8 bg-surface">
+        
+        <!-- Live Telemetry Ticker -->
+        <div class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 overflow-hidden flex items-center shadow-inner">
+          <span class="text-[10px] uppercase font-bold text-slate-500 mr-4 whitespace-nowrap bg-slate-950 px-2 py-1 rounded">Live Feed</span>
+          <div class="text-xs font-mono text-cyan-400 whitespace-nowrap overflow-hidden relative w-full h-4">
+            <div class="absolute whitespace-nowrap" style="animation: marquee_20s_linear_infinite 20s linear infinite;">
+              > Initializing Data Stream... > Fetching live metrics... > Map vectors ready... > Radar online. > System Nominal.
+            </div>
+          </div>
         </div>
-        <div class="ak" id="ak1">
-          <div class="ak-icon">🏫</div>
-          <div class="ak-val" style="color:var(--S)" id="ak-s">—</div>
-          <div class="ak-lbl">Schools &amp; Colleges</div>
-          <div class="ak-badge" style="background:rgba(251,191,36,.1);color:var(--yellow)">Education layer</div>
+
+        <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <h2 class="text-3xl md:text-4xl font-bold text-slate-50 tracking-tight font-sans">Telemetry Hub</h2>
+            <p class="text-slate-400 mt-2 font-mono text-sm">Real-time infrastructure distribution matrix.</p>
+          </div>
         </div>
-        <div class="ak" id="ak2">
-          <div class="ak-icon">🚦</div>
-          <div class="ak-val" style="color:var(--T)" id="ak-t">—</div>
-          <div class="ak-lbl">Traffic Nodes</div>
-          <div class="ak-badge" style="background:rgba(248,113,113,.1);color:var(--red)">Mobility layer</div>
+
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+          <div class="bg-slate-900/60 backdrop-blur-md p-6 rounded-xl shadow-card flex flex-col justify-between border border-slate-800 hover:shadow-card-hover hover:border-accent-hospital/50 transition-all cursor-default relative overflow-hidden group">
+            <div class="absolute -right-4 -top-4 w-24 h-24 bg-accent-hospital/10 rounded-full blur-2xl group-hover:bg-accent-hospital/20 transition-all"></div>
+            <div class="flex items-start justify-between mb-4">
+              <div class="p-3 bg-slate-800/80 rounded-lg text-accent-hospital border border-slate-700/50">
+                <i data-lucide="activity" class="w-5 h-5"></i>
+              </div>
+              <span class="text-[10px] font-mono text-emerald-400 bg-emerald-400/10 px-1 py-0.5 rounded border border-emerald-400/20">+2.4% &uarr;</span>
+            </div>
+            <div>
+              <h3 class="text-4xl font-mono font-semibold text-slate-50" id="kpi-hospitals">—</h3>
+              <p class="text-xs font-mono uppercase tracking-widest text-slate-400 mt-2">Healthcare Hubs</p>
+            </div>
+          </div>
+          
+          <div class="bg-slate-900/60 backdrop-blur-md p-6 rounded-xl shadow-card flex flex-col justify-between border border-slate-800 hover:shadow-card-hover hover:border-accent-school/50 transition-all cursor-default relative overflow-hidden group">
+            <div class="absolute -right-4 -top-4 w-24 h-24 bg-accent-school/10 rounded-full blur-2xl group-hover:bg-accent-school/20 transition-all"></div>
+            <div class="flex items-start justify-between mb-4">
+              <div class="p-3 bg-slate-800/80 rounded-lg text-accent-school border border-slate-700/50">
+                <i data-lucide="book-open" class="w-5 h-5"></i>
+              </div>
+              <span class="text-[10px] font-mono text-emerald-400 bg-emerald-400/10 px-1 py-0.5 rounded border border-emerald-400/20">+1.1% &uarr;</span>
+            </div>
+            <div>
+              <h3 class="text-4xl font-mono font-semibold text-slate-50" id="kpi-schools">—</h3>
+              <p class="text-xs font-mono uppercase tracking-widest text-slate-400 mt-2">Education Centers</p>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/60 backdrop-blur-md p-6 rounded-xl shadow-card flex flex-col justify-between border border-slate-800 hover:shadow-card-hover hover:border-accent-traffic/50 transition-all cursor-default relative overflow-hidden group">
+            <div class="absolute -right-4 -top-4 w-24 h-24 bg-accent-traffic/10 rounded-full blur-2xl group-hover:bg-accent-traffic/20 transition-all"></div>
+            <div class="flex items-start justify-between mb-4">
+              <div class="p-3 bg-slate-800/80 rounded-lg text-accent-traffic border border-slate-700/50">
+                <i data-lucide="car" class="w-5 h-5"></i>
+              </div>
+              <span class="text-[10px] font-mono text-slate-500 bg-slate-800 px-1 py-0.5 rounded border border-slate-600">0.0% -</span>
+            </div>
+            <div>
+              <h3 class="text-4xl font-mono font-semibold text-slate-50" id="kpi-traffic">—</h3>
+              <p class="text-xs font-mono uppercase tracking-widest text-slate-400 mt-2">Traffic Nodes</p>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/60 backdrop-blur-md p-6 rounded-xl shadow-glow-amber flex flex-col justify-between border border-amber-500/30 hover:border-amber-400 transition-all cursor-default relative overflow-hidden group">
+            <div class="absolute -right-4 -top-4 w-24 h-24 bg-amber-500/10 rounded-full blur-2xl group-hover:bg-amber-500/20 transition-all"></div>
+            <div class="flex items-start justify-between mb-4">
+              <div class="p-3 bg-amber-500/20 rounded-lg text-amber-500 border border-amber-500/20">
+                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+              </div>
+              <span class="text-[10px] font-mono text-rose-400 bg-rose-400/10 px-1 py-0.5 rounded border border-rose-400/20 animate-pulse">CRITICAL</span>
+            </div>
+            <div>
+              <h3 class="text-4xl font-mono font-semibold text-amber-500" id="kpi-underserved">—</h3>
+              <p class="text-xs font-mono uppercase tracking-widest text-amber-500/70 mt-2">Underserved Zones</p>
+            </div>
+          </div>
         </div>
-        <div class="ak" id="ak3">
-          <div class="ak-icon">⚠️</div>
-          <div class="ak-val" style="color:var(--U)" id="ak-u">—</div>
-          <div class="ak-lbl">Underserved Cells</div>
-          <div class="ak-badge" id="ak-upct" style="background:rgba(244,63,94,.1);color:var(--U)">—</div>
+        
+        <!-- Advanced Charts Grid (Radar, Doughnut, Multi-Axis) -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-8">
+          
+          <!-- Chart 1: Radar -->
+          <div class="bg-slate-900/60 backdrop-blur-md p-6 rounded-xl shadow-card border border-slate-800">
+            <h3 class="text-sm font-bold text-slate-50 mb-4 font-mono uppercase tracking-wider flex items-center gap-2"><i data-lucide="target" class="w-4 h-4 text-accent-school"></i> Zone Readiness Vector</h3>
+            <div class="w-full h-[300px] relative flex justify-center"><canvas id="ch-radar"></canvas></div>
+          </div>
+
+          <!-- Chart 2: Multi-Axis Line -->
+          <div class="bg-slate-900/60 backdrop-blur-md p-6 rounded-xl shadow-card border border-slate-800 col-span-1 lg:col-span-2">
+            <h3 class="text-sm font-bold text-slate-50 mb-4 font-mono uppercase tracking-wider flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-cyan-400"></i> Trajectory Prediction (Multi-Axis)</h3>
+            <div class="w-full h-[300px] relative"><canvas id="ch-multi"></canvas></div>
+          </div>
+          
+          <!-- Chart 3: Doughnut -->
+          <div class="bg-slate-900/60 backdrop-blur-md p-6 rounded-xl shadow-card border border-slate-800 h-full">
+            <h3 class="text-sm font-bold text-slate-50 mb-4 font-mono uppercase tracking-wider flex items-center gap-2"><i data-lucide="pie-chart" class="w-4 h-4 text-accent-hospital"></i> Network Efficiency</h3>
+             <div class="w-full h-[220px] relative"><canvas id="ch-doughnut"></canvas></div>
+          </div>
+
+          <!-- Insight Blocks -->
+          <div class="bg-slate-900/60 backdrop-blur-md p-6 rounded-xl shadow-card border border-slate-800 col-span-1 lg:col-span-2">
+             <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 h-full items-center">
+                <div class="border-l-2 border-accent-hospital pl-4 py-2">
+                    <h4 class="font-mono text-[10px] text-slate-400 uppercase tracking-widest">Healthcare Deficit</h4>
+                    <p class="text-3xl font-mono text-slate-50 mt-2" id="insight-h">—</p>
+                    <p class="text-xs text-slate-500 mt-1">Cells > 3km from any facility</p>
+                </div>
+                <div class="border-l-2 border-accent-school pl-4 py-2">
+                    <h4 class="font-mono text-[10px] text-slate-400 uppercase tracking-widest">Education Gaps</h4>
+                    <p class="text-3xl font-mono text-slate-50 mt-2" id="insight-s">—</p>
+                    <p class="text-xs text-slate-500 mt-1">Cells > 2km from nearest school</p>
+                </div>
+                <div class="border-l-2 border-accent-pharmacy pl-4 py-2">
+                    <h4 class="font-mono text-[10px] text-slate-400 uppercase tracking-widest">Pharmacy Scarcity</h4>
+                    <p class="text-3xl font-mono text-slate-50 mt-2" id="insight-p">—</p>
+                    <p class="text-xs text-slate-500 mt-1">Cells > 1.5km from pharmacy</p>
+                </div>
+             </div>
+          </div>
+
         </div>
-      </div>
-      <div class="ins-strip">
-        <div class="ins" id="ins0" style="border-left-color:var(--cyan)">
-          <div class="ins-num" style="color:var(--cyan)" id="ins-h">—</div>
-          <div class="ins-title">Areas lacking hospital within 3km</div>
-          <div class="ins-text">Grid cells where nearest hospital exceeds 3km — critical healthcare gaps.</div>
+      </section>
+
+      <!-- SCREEN 2: MAP EXPLORER (OLED Dark + Heatmaps) -->
+      <section id="screen-map" class="absolute inset-0 hidden">
+        <div id="map" class="w-full h-full z-0 font-sans"></div>
+        
+         <div class="absolute bottom-6 right-6 bg-slate-900/80 backdrop-blur-md p-4 rounded-xl shadow-xl border border-slate-700/50 z-10 w-56 text-slate-300">
+             <h4 class="text-[10px] font-bold text-slate-400 font-mono uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="list" class="w-3 h-3"></i> Overlay Mapping</h4>
+             <div class="space-y-3 text-sm font-medium">
+                <div class="flex items-center justify-between"><span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-accent-hospital shadow-[0_0_8px_rgba(34,211,238,0.8)]"></div> Hospitals</span></div>
+                <div class="flex items-center justify-between"><span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-accent-school shadow-[0_0_8px_rgba(245,158,11,0.8)]"></div> Schools</span></div>
+                <div class="flex items-center justify-between"><span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-accent-traffic shadow-[0_0_8px_rgba(244,63,94,0.8)]"></div> Traffic</span></div>
+                <div class="flex items-center justify-between"><span class="flex items-center gap-2"><div class="w-3 h-3 rounded-full bg-accent-pharmacy shadow-[0_0_8px_rgba(168,85,247,0.8)]"></div> Pharmacies</span></div>
+                <div class="w-full h-px bg-slate-800 my-2"></div>
+                <div class="flex items-center justify-between">
+                  <span class="flex items-center gap-2 text-amber-500 font-mono text-xs"><i data-lucide="flame" class="w-3 h-3"></i> Heatmap</span>
+                </div>
+                <div class="flex items-center gap-2"><div class="w-full h-2 rounded bg-gradient-to-r from-blue-500 via-amber-400 to-rose-500"></div></div>
+                <div class="flex justify-between text-[10px] text-slate-500 uppercase font-mono"><span>Low Deficit</span><span>High Deficit</span></div>
+             </div>
+         </div>
+
+        <div class="absolute top-4 left-4 md:top-6 md:left-6 w-80 max-h-[calc(100vh-3rem)] overflow-y-auto z-10 space-y-4 pt-12 md:pt-0">
+          
+          <div class="bg-slate-900/80 backdrop-blur-md p-5 rounded-xl shadow-xl border border-slate-700/50">
+            <h3 class="text-xs font-bold text-slate-50 font-mono uppercase tracking-widest mb-4 flex items-center gap-2">
+              <i data-lucide="layers" class="w-4 h-4 text-cyan-400"></i> Spatial Vectors
+            </h3>
+            <div class="space-y-2">
+              <label class="flex items-center justify-between group cursor-pointer border border-transparent hover:bg-slate-800/50 p-2 -m-2 rounded-lg transition-colors">
+                <div class="flex items-center gap-3">
+                   <div class="w-8 h-8 rounded bg-slate-800 flex items-center justify-center text-accent-hospital border border-slate-700 shadow-inner"><i data-lucide="activity" class="w-4 h-4"></i></div>
+                   <div>
+                     <p class="text-sm font-medium text-slate-200">Hospitals</p>
+                     <p class="text-[10px] font-mono text-slate-500" id="ln-hospitals">Loading...</p>
+                   </div>
+                </div>
+                <input type="checkbox" id="t-hospitals" checked onchange="toggleLayer('hospitals')" class="w-4 h-4 text-accent-hospital bg-slate-800 border-slate-600 rounded focus:ring-accent-hospital focus:ring-offset-slate-900 cursor-pointer transition-all">
+              </label>
+
+               <label class="flex items-center justify-between group cursor-pointer border border-transparent hover:bg-slate-800/50 p-2 -m-2 rounded-lg transition-colors mt-1">
+                <div class="flex items-center gap-3">
+                   <div class="w-8 h-8 rounded bg-slate-800 flex items-center justify-center text-accent-school border border-slate-700 shadow-inner"><i data-lucide="book-open" class="w-4 h-4"></i></div>
+                   <div>
+                     <p class="text-sm font-medium text-slate-200">Schools</p>
+                     <p class="text-[10px] font-mono text-slate-500" id="ln-schools">Loading...</p>
+                   </div>
+                </div>
+                <input type="checkbox" id="t-schools" checked onchange="toggleLayer('schools')" class="w-4 h-4 text-accent-school bg-slate-800 border-slate-600 rounded focus:ring-accent-school focus:ring-offset-slate-900 cursor-pointer transition-all">
+              </label>
+
+              <label class="flex items-center justify-between group cursor-pointer border border-transparent hover:bg-slate-800/50 p-2 -m-2 rounded-lg transition-colors mt-1">
+                <div class="flex items-center gap-3">
+                   <div class="w-8 h-8 rounded bg-slate-800 flex items-center justify-center text-accent-traffic border border-slate-700 shadow-inner"><i data-lucide="car" class="w-4 h-4"></i></div>
+                   <div>
+                     <p class="text-sm font-medium text-slate-200">Traffic Nodes</p>
+                     <p class="text-[10px] font-mono text-slate-500" id="ln-traffic_nodes">Loading...</p>
+                   </div>
+                </div>
+                <input type="checkbox" id="t-traffic_nodes" checked onchange="toggleLayer('traffic_nodes')" class="w-4 h-4 text-accent-traffic bg-slate-800 border-slate-600 rounded focus:ring-accent-traffic focus:ring-offset-slate-900 cursor-pointer transition-all">
+              </label>
+
+              <label class="flex items-center justify-between group cursor-pointer border border-transparent hover:bg-slate-800/50 p-2 -m-2 rounded-lg transition-colors mt-1">
+                <div class="flex items-center gap-3">
+                   <div class="w-8 h-8 rounded bg-slate-800 flex items-center justify-center text-accent-pharmacy border border-slate-700 shadow-inner"><i data-lucide="pill" class="w-4 h-4"></i></div>
+                   <div>
+                     <p class="text-sm font-medium text-slate-200">Pharmacies</p>
+                     <p class="text-[10px] font-mono text-slate-500" id="ln-pharmacies">Loading...</p>
+                   </div>
+                </div>
+                <input type="checkbox" id="t-pharmacies" onchange="toggleLayer('pharmacies')" class="w-4 h-4 text-accent-pharmacy bg-slate-800 border-slate-600 rounded focus:ring-accent-pharmacy focus:ring-offset-slate-900 cursor-pointer transition-all">
+              </label>
+              
+              <div class="h-px bg-slate-800 my-4"></div>
+              
+               <label class="flex items-center justify-between group cursor-pointer border border-slate-700 hover:border-amber-500/50 bg-slate-800/50 hover:bg-amber-500/10 p-3 -m-2 rounded-lg transition-all shadow-inner">
+                <div class="flex items-center gap-3">
+                   <div class="w-8 h-8 rounded bg-amber-500/20 flex items-center justify-center text-amber-500"><i data-lucide="flame" class="w-4 h-4"></i></div>
+                   <div>
+                     <p class="text-sm font-bold text-amber-500 font-mono">Heatmap Sync</p>
+                     <p class="text-[10px] text-amber-500/60 uppercase">Deficit Intensity</p>
+                   </div>
+                </div>
+                <div class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="t-underserved" onchange="toggleLayer('underserved')" class="sr-only peer">
+                  <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-500"></div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="bg-slate-900/80 backdrop-blur-md p-5 rounded-xl shadow-xl border border-slate-700/50">
+             <h3 class="text-xs font-bold text-slate-50 font-mono tracking-widest uppercase mb-4 flex items-center gap-2">
+                <i data-lucide="crosshair" class="w-4 h-4 text-rose-400"></i> Vector Search
+             </h3>
+             <div class="space-y-4">
+                <div>
+                  <label class="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-2">Target Node</label>
+                  <select id="q-fac" class="w-full bg-slate-950 border border-slate-700 text-slate-200 text-sm rounded-lg focus:ring-cyan-500 focus:border-cyan-500 block p-2.5 transition-colors hover:border-slate-500 outline-none shadow-inner font-inter">
+                    <option value="hospital">Hospitals & Clinics</option>
+                    <option value="school">Educational Institutes</option>
+                    <option value="pharmacy">Pharmacies</option>
+                  </select>
+                </div>
+                <div>
+                  <div class="flex justify-between items-center mb-2">
+                    <label class="block text-[10px] font-mono text-slate-400 uppercase tracking-widest">Radius Scope (km)</label>
+                    <span id="radius-val" class="text-cyan-400 font-mono text-xs">3.0 km</span>
+                  </div>
+                  <input type="range" id="q-km" value="3" min="0.5" max="10" step="0.5" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-400" oninput="document.getElementById('radius-val').innerText = this.value + ' km'">
+                </div>
+                <button onclick="runQuery()" class="w-full mt-4 text-slate-950 bg-cyan-400 hover:bg-cyan-300 shadow-glow-cyan transition-all focus:ring-4 focus:outline-none focus:ring-cyan-500/30 font-bold rounded-lg text-sm px-5 py-3 text-center flex items-center justify-center gap-2 cursor-pointer font-mono uppercase tracking-wider">
+                   Execute Scan<i data-lucide="radar" class="w-4 h-4"></i>
+                </button>
+                <div id="qresult" class="text-[10px] font-mono text-slate-500 mt-3 text-center uppercase tracking-widest bg-slate-950 p-2 rounded border border-slate-800">System Ready.</div>
+             </div>
+          </div>
         </div>
-        <div class="ins" id="ins1" style="border-left-color:var(--orange)">
-          <div class="ins-num" style="color:var(--orange)" id="ins-s">—</div>
-          <div class="ins-title">Areas lacking school within 2km</div>
-          <div class="ins-text">Zones where students face long distances to nearest school or college.</div>
-        </div>
-        <div class="ins" id="ins2" style="border-left-color:var(--red)">
-          <div class="ins-num" style="color:var(--red)" id="ins-p">—</div>
-          <div class="ins-title">Areas lacking pharmacy within 1.5km</div>
-          <div class="ins-text">Most widespread gap — large portions lack nearby pharmaceutical access.</div>
-        </div>
-      </div>
-      <div class="cg">
-        <div class="cc w2" id="cc0">
-          <div class="cc-hd"><div><div class="cc-title">Hospital Density by Grid Cell</div><div class="cc-sub">Top 15 areas · raw count</div></div><div class="cc-badge">HOSPITALS</div></div>
-          <div class="cw"><canvas id="ch-hosp"></canvas></div>
-        </div>
-        <div class="cc" id="cc1">
-          <div class="cc-hd"><div><div class="cc-title">Infrastructure Breakdown</div><div class="cc-sub">City-wide totals</div></div><div class="cc-badge">OVERVIEW</div></div>
-          <div class="cw"><canvas id="ch-infra"></canvas></div>
-        </div>
-        <div class="cc w2" id="cc2">
-          <div class="cc-hd"><div><div class="cc-title">School Distribution by Neighbourhood</div><div class="cc-sub">Top 15 grid cells</div></div><div class="cc-badge">SCHOOLS</div></div>
-          <div class="cw"><canvas id="ch-school"></canvas></div>
-        </div>
-        <div class="cc" id="cc3">
-          <div class="cc-hd"><div><div class="cc-title">Underserved Breakdown</div><div class="cc-sub">By missing facility type</div></div><div class="cc-badge">GAPS</div></div>
-          <div class="cw"><canvas id="ch-under"></canvas></div>
-        </div>
-      </div>
+      </section>
+
+      <!-- SCREEN 3: AI PLANNER (Cyberpunk Terminal) -->
+      <section id="screen-ai" class="absolute inset-0 hidden overflow-y-auto p-4 md:p-8 bg-surface">
+         <div class="max-w-5xl mx-auto space-y-8 pb-12">
+            
+            <div class="bg-slate-900/60 backdrop-blur-md p-8 rounded-2xl shadow-xl border border-slate-700/50 flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
+              <div class="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20"></div>
+              
+              <div class="flex-1 relative z-10">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded bg-amber-500/10 text-amber-500 text-[10px] font-mono tracking-widest uppercase mb-4 border border-amber-500/20 shadow-glow-amber">
+                  <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> GEMINI NEURAL NET
+                </div>
+                <h2 class="text-3xl font-bold text-slate-50 tracking-tight font-mono">Strategic Planner <span class="text-amber-500 font-light">v2.0</span></h2>
+                <p class="text-slate-400 mt-2 max-w-2xl leading-relaxed text-sm">
+                  Initialize deep spatial analysis against infrastructure deficit grids. The strategist identifies maximal impact zones for new public utility deployments based on multi-variate density modeling.
+                </p>
+              </div>
+              
+              <div class="w-full md:w-auto bg-slate-950/80 p-5 rounded-xl border border-slate-700 relative z-10 shadow-inner">
+                <label class="block text-[10px] font-mono text-slate-400 uppercase tracking-widest mb-3">Initialize Vector Target:</label>
+                <div class="flex flex-col sm:flex-row gap-3">
+                  <select id="ai-facility" class="bg-slate-900 border border-slate-600 text-slate-200 text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block p-2.5 cursor-pointer shadow-sm outline-none w-full sm:w-48 font-inter">
+                    <option value="hospital">Healthcare</option>
+                    <option value="school">Education Facilities</option>
+                    <option value="pharmacy">Pharmacies</option>
+                  </select>
+                  <button id="ai-btn" onclick="runAISuggestions()" class="text-slate-950 bg-amber-500 hover:bg-amber-400 transition-all shadow-glow-amber focus:ring-2 focus:ring-amber-300 font-bold font-mono uppercase tracking-wider rounded-lg text-sm px-6 py-2.5 text-center whitespace-nowrap flex items-center gap-3 cursor-pointer">
+                    <i data-lucide="cpu" class="w-4 h-4"></i> Run Process
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div id="ai-output" class="pt-4 relative z-10 w-full">
+              <div class="text-center py-24 px-4 bg-slate-900/30 rounded-2xl border border-dashed border-slate-700/50">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-800 text-slate-500 mb-6 shadow-inner border border-slate-700">
+                  <i data-lucide="terminal-square" class="w-8 h-8"></i>
+                </div>
+                <h3 class="text-lg font-mono text-slate-400">Awaiting Subroutine Parameters...</h3>
+                <p class="mt-2 text-sm text-slate-500 font-inter max-w-md mx-auto">Select a target facility type above and initiate the process to generate geospatial recommendations.</p>
+              </div>
+            </div>
+            
+         </div>
+      </section>
     </div>
+  </main>
 
-    <!-- AI SUGGESTIONS VIEW -->
-    <div class="view" id="ai-view">
-
-      <div class="ai-header">
-        <div class="ai-header-text">
-          <div class="ai-title">✨ AI Urban Planning Suggestions</div>
-          <div class="ai-subtitle">
-            Powered by Google Gemini — analyses Bangalore's infrastructure gaps and recommends
-            optimal facility placement strategies with impact scoring.
-          </div>
-        </div>
-        <div class="ai-controls">
-          <div class="ai-ctrl-group">
-            <div class="ai-ctrl-label">Facility Type</div>
-            <select class="ai-select" id="ai-facility">
-              <option value="hospital">🏥 Hospital</option>
-              <option value="school">🏫 School</option>
-              <option value="pharmacy">💊 Pharmacy</option>
-            </select>
-          </div>
-          <button class="ai-gen-btn" id="ai-btn" onclick="runAISuggestions()">
-            ✨ GENERATE AI SUGGESTIONS
-          </button>
-        </div>
-      </div>
-
-      <div class="ai-info-strip">
-        <div class="ai-info-card">
-          <div class="ai-info-icon">🧠</div>
-          <div class="ai-info-text">
-            <div class="ai-info-title">How it works</div>
-            <div class="ai-info-desc">Gemini analyses the top underserved grid cells and generates actionable planning recommendations with reasoning.</div>
-          </div>
-        </div>
-        <div class="ai-info-card">
-          <div class="ai-info-icon">📍</div>
-          <div class="ai-info-text">
-            <div class="ai-info-title">Show on Map</div>
-            <div class="ai-info-desc">Each suggestion includes a "Show on Map" button that flies you to the recommended location with a marker.</div>
-          </div>
-        </div>
-        <div class="ai-info-card">
-          <div class="ai-info-icon">⚡</div>
-          <div class="ai-info-text">
-            <div class="ai-info-title">Smart Impact Score</div>
-            <div class="ai-info-desc">Each suggestion is scored 0–10 based on estimated population served per unit of implementation cost.</div>
-          </div>
-        </div>
-      </div>
-
-      <div id="ai-output">
-        <div class="ai-empty" style="opacity:.5">
-          Select a facility type above and click <strong>Generate AI Suggestions</strong> to begin.
-        </div>
-      </div>
-
-    </div><!-- /ai-view -->
-
-  </div><!-- /content -->
-</div><!-- /shell -->
-
-<!-- Scripts — order matters -->
-<script src="js/config.js"></script>
-<script src="js/map.js"></script>
-<script src="js/sidebar.js"></script>
-<script src="js/query.js"></script>
-<script src="js/charts.js"></script>
-<script src="js/ai.js"></script>
-<script src="js/app.js"></script>
-
+  <script src="js/config_v4.js"></script>
+  <script src="js/map_v4.js?t=4"></script>
+  <script src="js/query_v4.js?t=4"></script>
+  <script src="js/charts_v4.js?t=4"></script>
+  <script src="js/ai_v4.js?t=4"></script>
+  <script src="js/app_v4.js?t=4"></script>
+  <!-- Re-run lucide icons for new dom elements -->
+  <script>lucide.createIcons();</script>
 </body>
 </html>
