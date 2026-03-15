@@ -18,7 +18,7 @@
 
 <br/>
 
-🌐 **[Live Demo](https://urban-intelligence-dashboard-seven.vercel.app/)** &nbsp;|&nbsp; 📡 **[API Docs](https://urban-intelligence-dashboard.onrender.com/docs)** &nbsp;|&nbsp; 📊 **[API Health](https://urban-intelligence-dashboard.onrender.com/api/v1/health)**
+🌐 **[Live Demo](https://urban-intel.vercel.app/)** &nbsp;|&nbsp; 📡 **[API Docs](https://urban-intelligence-dashboard.onrender.com/docs)** &nbsp;|&nbsp; 📊 **[API Health](https://urban-intelligence-dashboard.onrender.com/api/v1/health)**
 
 <br/>
 
@@ -155,7 +155,7 @@ The city is divided into a **25×25 grid** (~1.2 km × 1.2 km per cell). For eac
 
 | Layer | Platform | URL |
 |-------|----------|-----|
-| 🖥️ Frontend | Vercel | https://urban-intelligence-dashboard-seven.vercel.app/ |
+| 🖥️ Frontend | Vercel | https://urban-intel.vercel.app/ |
 | ⚙️ Backend API | Render | https://urban-intelligence-dashboard.onrender.com |
 | 📖 API Docs | Render (Swagger) | https://urban-intelligence-dashboard.onrender.com/docs |
 
@@ -351,10 +351,10 @@ As documented in the Technical Requirements Document, the following V2 enhanceme
 <table>
   <tr>
     <td><img src="frontend/assets/screenshots/map.png" alt="Map Explorer"/><br/><b>Map Explorer</b> — 5 toggleable layers</td>
-    <td><img src="frontend/assets/screenshots/underserved.png" alt="Gap Query"/><br/><b>Map Explorer</b> — Underserved Areas</td>
+    <td><img src="frontend/assets/screenshots/underserved.png" alt="Gap Query"/><br/><b>Heat Map</b> — Underserved Areas</td>
   </tr>
   <tr>
-    <td><img src="frontend/assets/screenshots/analytics.png" alt="Analytics"/><br/><b>Analytics</b> — 4 live charts</td>
+    <td><img src="frontend/assets/screenshots/analytics.png" alt="Analytics"/><br/><b>Analytics</b> — live charts</td>
     <td><img src="frontend/assets/screenshots/ai.png" alt="AI Suggestions"/><br/><b>AI Suggestions</b> — Gemini planning recommendations</td>
     
   </tr>
